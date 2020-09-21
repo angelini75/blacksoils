@@ -1,6 +1,6 @@
 # Filter data
 # 
-
+rm(list = ls())
 library(tidyverse)
 
 dat <- read_csv("data/perfiles-2020-09-18.csv")
@@ -52,6 +52,6 @@ csec$value_seco <- gsub(pattern = " ", replacement = "", x = csec$value_seco)
 
 csec <- csec %>% dplyr::select(h_seco, value_seco, chroma_seco)
 
-d <- cbind(d,sec) %>% as_tibble()
+d <- cbind(d,csec) %>% as_tibble()
 
 write_csv(d, "data/datos_para_BlackSoil.csv")
