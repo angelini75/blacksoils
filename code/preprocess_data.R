@@ -3,9 +3,9 @@
 
 library(tidyverse)
 
-dat <- read_csv("data/perfiles-2020-09-11.csv")
+dat <- read_csv("data/perfiles-2020-09-18.csv")
 names(dat)
-dat %>% 
+d <- dat %>% 
   dplyr::select(idh = id,
                 idp=perfil_id, 
                 y = perfil_ubicacion_latitud, 
@@ -20,4 +20,38 @@ dat %>%
                 oc = analitico_carbono_organico_c,
                 ph = analitico_ph_h2o,
                 clay = analitico_arcilla
-  )
+  ) %>% 
+  filter(top <= 50)
+
+
+chum <- stringr::str_split(string = d$colh, pattern = "(?<=YR)", simplify = TRUE) %>% as_tibble()
+chum <- cbind(chum,
+              stringr::str_split(string = chum$V2, pattern = "/", simplify = TRUE)) %>% 
+  as_tibble()
+
+names(chum) <- c("h_humedo", "v_c_humedo", "misc_hum_1", "value_humedo", "chroma_humedo", "misc_hum_2")
+chum$h_humedo <- gsub(pattern = " ", replacement = "", x = chum$h_humedo)
+chum$v_c_humedo <- gsub(pattern = " ", replacement = "", x = chum$v_c_humedo)
+chum$value_humedo <- gsub(pattern = " ", replacement = "", x = chum$value_humedo)
+
+chum <- chum %>% dplyr::select(h_humedo, value_humedo, chroma_humedo)
+
+d <- cbind(d,chum) %>% as_tibble()
+
+
+
+csec <- stringr::str_split(string = d$cols, pattern = "(?<=YR)", simplify = TRUE) %>% as_tibble()
+csec <- cbind(csec,
+              stringr::str_split(string = csec$V2, pattern = "/", simplify = TRUE)) %>% 
+  as_tibble()
+
+names(csec) <- c("h_seco", "v_c_seco", "misc_sec_1", "value_seco", "chroma_seco", "misc_sec_2")
+csec$h_sec <- gsub(pattern = " ", replacement = "", x = csec$h_seco)
+csec$v_c_seco <- gsub(pattern = " ", replacement = "", x = csec$v_c_seco)
+csec$value_seco <- gsub(pattern = " ", replacement = "", x = csec$value_seco)
+
+csec <- csec %>% dplyr::select(h_seco, value_seco, chroma_seco)
+
+d <- cbind(d,sec) %>% as_tibble()
+
+write_csv(d, "data/datos_para_BlackSoil.csv")
