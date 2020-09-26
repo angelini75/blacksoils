@@ -55,3 +55,12 @@ csec <- csec %>% dplyr::select(h_seco, value_seco, chroma_seco)
 d <- cbind(d,csec) %>% as_tibble()
 
 write_csv(d, "data/datos_para_BlackSoil.csv")
+
+
+write_csv2(d, "data/datos_para_BlackSoil2.csv")
+
+
+
+dat <- read_csv("data/datos_revisados_26_sep_20.csv")
+dat$cec <- dat$cec/1000
+dat$bsum <- dat$bsum/1000
