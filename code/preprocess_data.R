@@ -68,13 +68,17 @@ write_csv(d, "data/datos_para_BlackSoil.csv")
 write_csv2(d, "data/datos_para_BlackSoil2.csv")
 
 
-
+library(tidyverse)
 dat <- read_csv("data/datos_revisados_26_sep_20.csv")
 dat$cec <- dat$cec/1000
 dat$bsum <- dat$bsum/1000
 
+dat %>% mutate(bs_oc = if_else(condition = oc >= 1.2, true = 1, false = 0)) %>% View()
 
-
+dat %>% 
+  mutate(bs_oc = if_else(condition = oc >= 1.2, true = 1, false = 0)) %>% 
+  mutate(bs_croma = if_else(condition = chroma_humedo <= 3, true = 1, false = 0)) %>% 
+  View()
 
 
 
