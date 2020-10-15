@@ -1,10 +1,15 @@
+# paquetes
+install.packages(c("cowplot", "googleway", "ggplot2", "ggrepel", 
+                   "ggspatial", "libwgeom", "sf", "rnaturalearth", "rnaturalearthdata", "rgeos"))
+
 # Filter data
 # 
 rm(list = ls())
 library(tidyverse)
 
+
 dat <- read_csv("data/perfiles-2020-09-18.csv")
-names(dat)
+lentnames(dat)
 d <- dat %>% 
   dplyr::select(idh = id,
                 idp=perfil_id, 
@@ -21,7 +26,7 @@ d <- dat %>%
                 ph = analitico_ph_h2o,
                 clay = analitico_arcilla
   ) %>% 
-  filter(top <= 50)
+  filter(top <= 20)
 
 # algo
 
@@ -67,3 +72,33 @@ write_csv2(d, "data/datos_para_BlackSoil2.csv")
 dat <- read_csv("data/datos_revisados_26_sep_20.csv")
 dat$cec <- dat$cec/1000
 dat$bsum <- dat$bsum/1000
+
+
+
+
+
+
+
+blacksoils1 <- subset(dat, oc >= 1.2 & top >= 25  & chroma_humedo <= 3 & value_humedo <= 3 & cec >= 25 & bsat >= 50,  ) 
+blacksoils2 <- subset(dat, oc >= 1.2 & top >= 25  & chroma_humedo <= 3 & value_humedo <= 3)
+print(blacksoils2)
+length(blacksoils2)
+attributes(blacksoils2)
+
+library("ggplot2")
+theme_set(theme_bw())
+library("sf")
+library("rnaturalearth")
+library("rnaturalearthdata")
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+class(world)
+
+ggplot(data = world) +
+  geom_sf() +
+  geom_point(data = blacksoils2, aes(x = x, y = y), size = 2, 
+             shape = 23, fill = "darkred") +
+  coord_sf(xlim = c(-75, -53), ylim = c(-56, -20), expand = FALSE)
+
+
+
