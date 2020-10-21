@@ -83,12 +83,29 @@ datbs2 <- dat %>%
   mutate(bs_cromah = if_else(condition = chroma_humedo <= 3, true = 1, false = 0)) %>%
   mutate(bs_valueh = if_else(condition = value_humedo <= 3, true = 1, false = 0)) %>%
   mutate(bs_values = if_else(condition = value_seco <= 5, true = 1, false = 0)) %>%
-  mutate(bs_top = if_else(condition = top <= 20, true = 1, false = 0)) %>%
+  # OJO, TOP <= 25, NO a 20
+  mutate(bs_top = if_else(condition = top <= 20, true = 1, false = 0)) %>% 
+  # OJO, las condiciones de values con or (|) deberían estar entre paréntesis:
+  #     ... & (bs_valueh == 1 | bs_values == 1) & ...            Pero fijate 
+  # que si alguna de las dos variables es NA el resultado será NA. Por lo tanto antes de  
+  # evaluar el valor hay que ver si value_seco no es NA. Una opción es crear una columna que diga 
+  # si value_seco es NA (is.na(dat$value_seco)) y usar esa columna para saber si se puede 
+  # o no usar value_seco. La otra, para mi es más factible, evaluar sólo value_humedo, 
+  # que tiene mucho menos NAs.   
   mutate(blacksoil2 = if_else(condition = bs_oc == 1 & bs_cromah == 1 & bs_valueh == 1 | bs_values == 1 & bs_top == 1, true = 1, false = 0)) %>%
-  View()
+  View() # <<--- quitar esto y la pipa anterior
+
+# Despues de esta operación hay que dejar _sólo_ una fila por perfil. Actualmente tiene más de una.
+# 1ro. eliminar todos los horizontes que tengan top > 25. Esos no entran en el análisis.
+# 2do. evaluar si algunos de los horizontes de cada perfil tiene blacksoil2 == 0. Si sí,
+#      el perfil no es BS, si nó, es BS. 
+#      Pista: Usar función group_by y summarise. Estan en el capítulo 5 que te envié (creo)
+#      Además tené en cuenta las Cheat Sheets de RStudio https://rstudio.com/resources/cheatsheets/
+#      Acá la de dplyr https://raw.githubusercontent.com/rstudio/cheatsheets/master/data-transformation.pdf
 
 
 # error. no entiendo por qué no puedo hacer un subset con el nuevo campo. no es un objeto
+# MA: esto es porque en la fila #88 dice View(). Entonces datbs2 no está como objeto en Environment.
   cat2 <- subset(datbs2, blacksoil2 == 1) 
 
  
