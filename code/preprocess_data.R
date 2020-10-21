@@ -28,7 +28,7 @@ d <- dat %>%
   ) %>% 
   filter(top <= 20)
 
-# algo
+
 
 
 chum <- stringr::str_split(string = d$colh, pattern = "(?<=YR)", simplify = TRUE) %>% as_tibble()
