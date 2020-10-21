@@ -85,10 +85,16 @@ dat <- read_csv("data/datos_revisados_26_sep_20.csv")
     mutate(bs_cromah = if_else(condition = chroma_humedo <= 3, true = 1, false = 0)) %>%
     mutate(bs_valueh = if_else(condition = value_humedo <= 3, true = 1, false = 0)) %>%
     mutate(bs_values = if_else(condition = value_seco <= 5, true = 1, false = 0)) %>%
-    mutate(bs_top = if_else(condition = top <= 20, true = 1, false = 0)) %>%
-    mutate(blacksoil2 = if_else(condition = bs_oc == 1 & bs_cromah == 1 & bs_valueh == 1 | bs_values == 1 & bs_top == 1, true = 1, false = 0))) %>%
+    mutate(bs_top = if_else(condition = top <= 25, true = 1, false = 0)) %>%
+    mutate(blacksoil2 = if_else(condition = bs_oc == 1 & bs_cromah == 1 & bs_valueh == 1 & bs_top == 1, true = 1, false = 0))) %>%
   View()
 
+
+# Remove duplicated
+datbs2 %>% group_by(idp) %>% summarise(bs = mean(top), 
+                                       x = n(),
+                                       y = bs/x,
+                                       z = sum(top))
 
 
 # seleccionar filas blacksoils2 = 1
@@ -99,7 +105,6 @@ View(bs2)
 bs2_3cols <- transmute (bs2,y ,x , blacksoil2)
 View(bs2_3cols)
 
-# Remove duplicated
 
 
 
@@ -140,6 +145,6 @@ class(world)
 
 ggplot(data = world) +
   geom_sf() +
-  geom_point(data = bs1, aes(x = x, y = y), size = 2,
+  geom_point(data = bs2, aes(x = x, y = y), size = 2,
              shape = 23, fill = "darkred") +
   coord_sf(xlim = c(-75, -53), ylim = c(-56, -20), expand = FALSE)
