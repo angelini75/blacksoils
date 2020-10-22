@@ -77,8 +77,21 @@ library(tidyverse)
 library(dplyr)
 
 dat <- read_csv("data/datos_revisados_26_sep_20.csv")
+# Cuento número de filas o registros
+count(dat)
+# Cuento número de perfiles (mismo idp)
+dat_nperfiles <- distinct(dat, idp)
+count(dat_nperfiles)
 
-# creacioón del campo blacksoil2, de aquellos que cumplen las condiciones
+# Selecciono aquellos con registros(horizontes) con co > 1.2. los cuento
+# de 14680 quedan 2592
+oc <- dat[dat$oc > 1.2,]
+View(oc)
+
+dat_nperfiles <- distinct(oc, idp)
+count(dat_nperfiles)
+
+# creación del campo blacksoil2, de aquellos que cumplen las condiciones
 # para ser Black Soils Segunda Categoría
 
 (datbs2 <- dat %>%
@@ -101,24 +114,38 @@ dat <- read_csv("data/datos_revisados_26_sep_20.csv")
 
 
 
-
+# Me quedo solo con aquellos horizontes con top menor a 25.
 datbs2_f  <-  filter(datbs2, top < 25)  
+View(datbs2_f)
 
 # Con la función group_by evaluamos si alguno de los horizontes del perfil no es blacksoil 
 # (blacksoil2 == 0). Si hay alguno, el perfil no es blacksoil, si nó, es BS 
 # codigo de abajo: si bs2 no es == 1, ese perfil no es BS 
 
-datbs2_f %>% group_by(idp) %>% summarise(n = n(),
+evalua_BS2 <- datbs2_f %>% group_by(idp) %>% summarise(n = n(),
+                                                       x = x,
+                                                       y = y,
                                        s = sum(blacksoil2),
                                        bs2 = mean(blacksoil2))
 
-View()
+View(evalua_BS2)
+
+# Selecciono aquellos con registros(horizontes) bs2 == 1
+BlackSoils2 <- evalua_BS2[evalua_BS2$bs2 == 1,]
+View(BlackSoils2)
+Count(BlackSoils2)
+
+# Eliminar filas con nulos en una columna concreta, en este caso bs2
+BlackSoils2_sinNA <- BlackSoils2[!is.na(BlackSoils2$bs2),]
+View(BlackSoils2_sinNA)
+count(BlackSoils2_sinNA)
 
 # borro filas duplicadas. dejo solo una por perfil
-datbs2_f_d <- distinct(datbs2_f, idp)
-count(datbs2_f)                                       
+BS2 <- distinct(BlackSoils2_sinNA, idp, x, y, bs2)
+View(BS2)
+count(BS2)                                       
 
-
+BS2 <- BlackSoils2_sinNA[unique(BlackSoils2_sinNA$idp),]
 
 
 # seleccionar filas blacksoils2 = 1
@@ -169,6 +196,6 @@ class(world)
 
 ggplot(data = world) +
   geom_sf() +
-  geom_point(data = bs2, aes(x = x, y = y), size = 2,
+  geom_point(data = BlackSoils2_sinNA, aes(x = x, y = y), size = 2,
              shape = 23, fill = "darkred") +
   coord_sf(xlim = c(-75, -53), ylim = c(-56, -20), expand = FALSE)
