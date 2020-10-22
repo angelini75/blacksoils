@@ -114,8 +114,9 @@ count(dat_nperfiles)
 
 
 
-# Me quedo solo con aquellos horizontes con top menor a 25.
+# Me quedo solo con aquellos horizontes con top menor a 20 (es la 2 Cat, no la 1).
 datbs2_f  <-  filter(datbs2, top < 25)  
+count(datbs2_f)
 View(datbs2_f)
 
 # Con la función group_by evaluamos si alguno de los horizontes del perfil no es blacksoil 
@@ -145,23 +146,6 @@ BS2 <- distinct(BlackSoils2_sinNA, idp, x, y, bs2)
 View(BS2)
 count(BS2)                                       
 
-BS2 <- BlackSoils2_sinNA[unique(BlackSoils2_sinNA$idp),]
-
-
-# seleccionar filas blacksoils2 = 1
-bs2 <-subset(datbs2, blacksoil2 == 1)
-View(bs2)
-
-# Si solo desea mantener las nuevas variables, use transmute ()
-bs2_3cols <- transmute (bs2,y ,x , blacksoil2)
-View(bs2_3cols)
-
-
-
-
-# exportar tabla
-
-write_csv(bs2_3cols, "bs2_3cols.csv")
 
 # creacioón del campo blacksoil1, de aquellos que cumplen las condiciones para ser Black Soils 1 Categoría.
 
@@ -174,14 +158,41 @@ write_csv(bs2_3cols, "bs2_3cols.csv")
     mutate(bs_top = if_else(condition = top <= 25, true = 1, false = 0)) %>%
     mutate(bs_cec = if_else(condition = cec >= 25, true = 1, false = 0)) %>%
     mutate(bs_bsat = if_else(condition = bsat >= 50, true = 1, false = 0)) %>%
-    mutate(blacksoil1 = if_else(condition = bs_oc == 1 & bs_cromah == 1 & bs_valueh == 1 | bs_values == 1 & bs_top == 1 & bs_cec == 1 & bs_bsat == 1, true = 1, false = 0))) %>%
+    mutate(blacksoil1 = if_else(condition = bs_oc == 1 & bs_cromah == 1 & bs_valueh == 1 & bs_top == 1 & bs_cec == 1 & bs_bsat == 1, true = 1, false = 0))) %>%
   View()
 
-# seleccionar filas blacksoils2 = 1
-bs1 <-subset(datbs1, blacksoil1 == 1)
 
-View(bs2)
+# Me quedo solo con aquellos horizontes con top menor a 25.
+datbs1_f  <-  filter(datbs1, top < 25)  
+count(datbs1_f)
+View(datbs1_f)
 
+# Con la función group_by evaluamos si alguno de los horizontes del perfil no es blacksoil 
+# (blacksoil1 == 0). Si hay alguno, el perfil no es blacksoil, si nó, es BS 
+# codigo de abajo: si bs2 no es == 1, ese perfil no es BS 
+
+evalua_BS1 <- datbs1_f %>% group_by(idp) %>% summarise(n = n(),
+                                                       x = x,
+                                                       y = y,
+                                                       s = sum(blacksoil1),
+                                                       bs1 = mean(blacksoil1))
+
+View(evalua_BS1)
+
+# Selecciono aquellos con registros(horizontes) bs1 == 1
+BlackSoils1 <- evalua_BS1[evalua_BS1$bs1 == 1,]
+View(BlackSoils1)
+count(BlackSoils1)
+
+# Eliminar filas con nulos en una columna concreta, en este caso bs1
+BlackSoils1_sinNA <- BlackSoils1[!is.na(BlackSoils1$bs1),]
+View(BlackSoils1_sinNA)
+count(BlackSoils1_sinNA)
+
+# borro filas duplicadas. dejo solo una por perfil
+BS1 <- distinct(BlackSoils1_sinNA, idp, x, y, bs1)
+View(BS1)
+count(BS1)                                       
 
 
 
@@ -196,6 +207,16 @@ class(world)
 
 ggplot(data = world) +
   geom_sf() +
-  geom_point(data = BlackSoils2_sinNA, aes(x = x, y = y), size = 2,
+  geom_point(data = BS2, aes(x = x, y = y), size = 2,
              shape = 23, fill = "darkred") +
   coord_sf(xlim = c(-75, -53), ylim = c(-56, -20), expand = FALSE)
+
+# Si solo desea mantener las nuevas variables, use transmute ()
+#bs2_3cols <- transmute (bs2,y ,x , blacksoil2)
+#View(bs2_3cols)
+
+
+# exportar tabla
+
+#write_csv(bs2_3cols, "bs2_3cols.csv")
+
