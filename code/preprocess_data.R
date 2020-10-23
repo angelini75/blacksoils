@@ -85,11 +85,11 @@ count(dat_nperfiles)
 
 # Selecciono aquellos con registros(horizontes) con co > 1.2. los cuento
 # de 14680 quedan 2592
-oc <- dat[dat$oc > 1.2,]
-View(oc)
+# oc <- dat[dat$oc > 1.2,]
+# View(oc)
+# dat_nperfiles <- distinct(oc, idp)
+# count(dat_nperfiles)
 
-dat_nperfiles <- distinct(oc, idp)
-count(dat_nperfiles)
 
 # creación del campo blacksoil2, de aquellos que cumplen las condiciones
 # para ser Black Soils Segunda Categoría
@@ -114,8 +114,9 @@ count(dat_nperfiles)
 
 
 
-# Me quedo solo con aquellos horizontes con top menor a 20 (es la 2 Cat, no la 1).
-datbs2_f  <-  filter(datbs2, top < 25)  
+# Me quedo solo con aquellos horizontes con top menor a 25 (es la 2 Cat, no la 1).
+# y el bottom no debería ser > a 20 ????
+datbs2_f  <-  filter(datbs2, top < 25 & bot > 20)  
 count(datbs2_f)
 View(datbs2_f)
 
@@ -134,12 +135,14 @@ View(evalua_BS2)
 # Selecciono aquellos con registros(horizontes) bs2 == 1
 BlackSoils2 <- evalua_BS2[evalua_BS2$bs2 == 1,]
 View(BlackSoils2)
-Count(BlackSoils2)
+count(BlackSoils2)
 
 # Eliminar filas con nulos en una columna concreta, en este caso bs2
 BlackSoils2_sinNA <- BlackSoils2[!is.na(BlackSoils2$bs2),]
 View(BlackSoils2_sinNA)
 count(BlackSoils2_sinNA)
+
+nrow(BlackSoils2_sinNA[duplicated(BlackSoils2_sinNA),])
 
 # borro filas duplicadas. dejo solo una por perfil
 BS2 <- distinct(BlackSoils2_sinNA, idp, x, y, bs2)
@@ -163,7 +166,8 @@ count(BS2)
 
 
 # Me quedo solo con aquellos horizontes con top menor a 25.
-datbs1_f  <-  filter(datbs1, top < 25)  
+# y el bottom no debería ser > a 25???
+datbs1_f  <-  filter(datbs1, top < 25 & bot > 25)  
 count(datbs1_f)
 View(datbs1_f)
 
@@ -207,7 +211,7 @@ class(world)
 
 ggplot(data = world) +
   geom_sf() +
-  geom_point(data = BS2, aes(x = x, y = y), size = 2,
+  geom_point(data = BS1, aes(x = x, y = y), size = 2,
              shape = 23, fill = "darkred") +
   coord_sf(xlim = c(-75, -53), ylim = c(-56, -20), expand = FALSE)
 
