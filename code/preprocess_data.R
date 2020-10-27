@@ -116,7 +116,7 @@ count(dat_nperfiles)
 
 # Me quedo solo con aquellos horizontes con top menor a 25 (es la 2 Cat, no la 1).
 # y el bottom no debería ser > a 20 ????
-datbs2_f  <-  filter(datbs2, top < 25 & bot > 20)  
+datbs2_f  <-  filter(datbs2, top < 25)  
 count(datbs2_f)
 View(datbs2_f)
 
@@ -124,13 +124,23 @@ View(datbs2_f)
 # (blacksoil2 == 0). Si hay alguno, el perfil no es blacksoil, si nó, es BS 
 # codigo de abajo: si bs2 no es == 1, ese perfil no es BS 
 
-evalua_BS2 <- datbs2_f %>% group_by(idp) %>% summarise(n = n(),
-                                                       x = x,
-                                                       y = y,
-                                       s = sum(blacksoil2),
-                                       bs2 = mean(blacksoil2))
-
-View(evalua_BS2)
+evalua_BS2 <- datbs2_f %>% 
+  group_by(idp) %>% 
+  summarise(n = n(), # calcula cuantos elementos hay dentro de cada grupo (idp)
+            x = first(x), # toma el primer elemento de un grupo
+            y = first(y), # idem
+            s = sum(blacksoil2), # suma los valores del campo blacksoil2 dentro de cada grupo (idp)
+            bs2 = if_else(s == n, 1, 0)) # condicion, si n == s (todos los horizontes cumplen
+                                         # la condicion de BS) entonces el perfil es BS (1)
+                                         # si no, no (0).
+# veamos como queda
+library(sf) # para convertir a objeto espacial
+d <- st_as_sf(evalua_BS2, coords = c("x", "y"), crs = 4326) # definimos coordenadas y 
+                                                            # sistema de referencia
+library(mapview) # para mapas interactivos
+d %>% 
+  filter(bs2 == 1) %>% # nos quedamos sólo con los perfiles que son BS (sólo para visualizar)
+  mapview(zcol = "bs2", cex = 1, color = "red") # mostrar en el mapa
 
 # Selecciono aquellos con registros(horizontes) bs2 == 1
 BlackSoils2 <- evalua_BS2[evalua_BS2$bs2 == 1,]
