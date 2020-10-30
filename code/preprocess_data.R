@@ -26,7 +26,7 @@ d <- dat %>%
                 ph = analitico_ph_h2o,
                 clay = analitico_arcilla
   ) %>%
-  filter(top <= 20)
+  filter(top <= 25)
 
 
 
@@ -63,6 +63,31 @@ write_csv(d, "data/datos_para_BlackSoil.csv")
 
 write_csv2(d, "data/datos_para_BlackSoil2.csv")
 
+#### rescatar datos de bases
+#### 
+dat <- read_csv("data/perfiles-2020-09-18.csv")
+names(dat)
+d <- dat %>%
+  group_by(id) %>% 
+  transmute(idh = id,
+            idp = perfil_id,
+            top = profundidad_superior,
+            cec = analitico_t,
+            ca = analitico_base_ca,
+            mg = analitico_base_mg,
+            k = analitico_base_k,
+            na = analitico_base_na,
+            bsum_sisinta = analitico_s,
+            bsum_calculada = sum(across(ca:na), na.rm = TRUE),
+            bsat = analitico_saturacion_t,
+            bsum_diff = bsum_sisinta - bsum_calculada
+  ) %>%
+  filter(top < 25) %>% 
+  ungroup() %>% 
+  select(-id)
+d
+# el resultado (d) lo tiene que revisar Darío
+write_csv(d, "data/datos_de_saturacion.csv")
 
 library(tidyverse)
 dat <- read_csv("data/datos_revisados_26_sep_20.csv")
