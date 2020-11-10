@@ -28,7 +28,7 @@ d <- dat %>%
   ) %>%
   filter(top <= 25)
 
-
+d %>% ggplot(aes(x = cec)) + geom_histogram()
 
 chum <- stringr::str_split(string = d$colh, pattern = "(?<=YR)", simplify = TRUE) %>% as_tibble()
 chum <- cbind(chum,
@@ -85,28 +85,55 @@ d <- dat %>%
   filter(top < 25) %>% 
   ungroup() %>% 
   select(-id)
-d
+d %>% pivot_longer(cec:na) %>% 
+  ggplot(aes(y = value)) + facet_wrap("name", scales = "free") + geom_boxplot()
+
 # el resultado (d) lo tiene que revisar Darío
 write_csv(d, "data/datos_de_saturacion.csv")
-
-library(tidyverse)
-dat <- read_csv("data/datos_revisados_26_sep_20.csv")
-dat$cec <- dat$cec/1000
-dat$bsum <- dat$bsum/1000
-
 
 
 #ACÁ ARRANCA EL SCRIPT
 rm(list = ls())
 library(tidyverse)
-library(dplyr)
 
-dat <- read_csv("data/datos_revisados_26_sep_20.csv")
+# CARGAR DATOS EDITADOS POR DARÍO
+# 
+sat <- read_delim("data/datos_saturacion_revisados_3_nov_2020.csv", delim = "\t")
+
+sat %>% pivot_longer(cec:na) %>% 
+  ggplot(aes(y = value)) + facet_wrap("name", scales = "free") + geom_boxplot()
+
+
+sat <- sat %>% group_by(idh) %>% 
+  mutate(bsat2 = if_else(condition = !is.na(cec) & !is.na(ca) &
+                           !is.na(mg) & !is.na(k) & !is.na(na),
+                         true = ((ca+mg+k+na)/cec)*100,
+                         false = bsat)) %>%
+  mutate(bsat = if_else(condition = bsat > 5000,
+                         true = bsat2,
+                         false = bsat)) %>% 
+  mutate(bsat = if_else(condition = is.na(ca) &
+                           is.na(mg) & !is.na(k) & !is.na(na),
+                         true = 100,
+                         false = bsat)) %>% 
+  mutate(bsat = if_else(condition = is.na(bsat) & !is.na(bsat2) & bsat2 < 125,
+                         true = bsat2,
+                         false = bsat))
+sat <- sat %>% 
+  transmute(bsat = if_else(bsat>100, 100, bsat)) %>% 
+  filter(bsat>=1)
+
+library(tidyverse)
+dat <- read_csv("data/datos_revisados_26_sep_20.csv") %>% 
+  select(-bsum, -bsat) %>% 
+  mutate(cec = cec/1000) %>% 
+  left_join(sat) %>% 
+  unique()
+
 # Cuento número de filas o registros
-count(dat)
-# Cuento número de perfiles (mismo idp)
-dat_nperfiles <- distinct(dat, idp)
-count(dat_nperfiles)
+length(unique(dat$idh)) # numero de horizontes
+length(unique(dat$idp)) # numero de perfiles
+
 
 # Selecciono aquellos con registros(horizontes) con co > 1.2. los cuento
 # de 14680 quedan 2592
@@ -119,16 +146,105 @@ count(dat_nperfiles)
 # creación del campo blacksoil2, de aquellos que cumplen las condiciones
 # para ser Black Soils Segunda Categoría
 
-(datbs2 <- dat %>%
-    mutate(bs_oc = if_else(condition = oc >= 1.2, true = 1, false = 0)) %>%
-    mutate(bs_cromah = if_else(condition = chroma_humedo <= 3, true = 1, false = 0)) %>%
-    mutate(bs_valueh = if_else(condition = value_humedo <= 3, true = 1, false = 0)) %>%
-    mutate(bs_values = if_else(condition = value_seco <= 5, true = 1, false = 0)) %>%
-    mutate(bs_top = if_else(condition = top <= 25, true = 1, false = 0)) %>%
-    mutate(blacksoil2 = if_else(condition = bs_oc == 1 & bs_cromah == 1 & bs_valueh == 1 & bs_top == 1, true = 1, false = 0))) %>%
-  View()
+x <- dat %>%
+    filter(top<25) %>% 
+    mutate(bs_oc = if_else(condition = oc >= 1.2, true = 1, false = 0),
+           bs_cromah = if_else(condition = chroma_humedo <= 3, true = 1, false = 0),
+           bs_valueh = if_else(condition = value_humedo <= 3, true = 1, false = 0),
+           bs_bot = if_else(condition = bot >= 25, true = 1, false = 0),
+           bs_bsat = if_else(condition = bsat >= 50, true = 1, false = 0),
+           bs_cec = if_else(condition = cec >= 25, true = 1, false = 0)) %>%
+  #mutate(bs_values = if_else(condition = value_seco <= 5, true = 1, false = 0)) %>%
+  
+    select(idh:bot, bs_oc:bs_cec)
+
+x <- x %>% 
+  mutate(bs2 = if_else(bs_oc == 1 & 
+                           bs_cromah == 1 & 
+                           bs_valueh == 1,
+                         true = 1, 
+                         false = 0),
+         bs1 = if_else(bs_oc == 1 & 
+                         bs_cromah == 1 & 
+                         bs_valueh == 1 &
+                         bs_cec == 1 &
+                         bs_bsat == 1,
+                       true = 1, 
+                       false = 0)) 
+y <- x %>% 
+  group_by(idp, x, y) %>% 
+  summarise(x = first(x),
+            y = first(y),
+            n = n(),
+            condbs2 = sum(bs2)/n,
+            condbs1 = sum(bs1)/n,
+            bottom = sum(bs_bot)) %>% 
+  mutate(bs2 = if_else(condbs2 == 1 & bottom == 1, 1, 0),
+         bs1 = if_else(condbs1 == 1 & bottom == 1, 1, 0)) %>% 
+  select(-condbs1, -condbs2, -bottom, -n) %>%
+  ungroup() %>%  
+  group_by(idp, x, y) %>%
+  summarize(z = ifelse(bs1 == 1,1,
+                             ifelse(bs2 == 1 & bs1 == 0,2,
+                                    ifelse(bs1==0 & bs2==0, 0, NA)))) %>% 
+# select(-bs1, -bs2) %>%
+  ungroup() %>% 
+  sf::st_as_sf(coords = c("x", "y"), crs = 4326) 
+y$z <- as.factor(y$z)
+# bs21 <- datbs2 %>% 
+#   group_by(idp, x, y) %>% 
+#   summarise(x = first(x),
+#             y = first(y),
+#             n = n(),
+#             cond = sum(cond1)/n,
+#             bottom = sum(bs_bot)) %>% 
+#   mutate(bs2 = if_else(cond == 1 & bottom == 1, 1, 0)) %>% 
+#   select(-cond, -bottom) %>%
+#   ungroup() %>% 
+#   na.omit() %>% 
+#   filter(bs2 == 1) %>%
+#   sf::st_as_sf(coords = c("x", "y"), crs = 4326) 
+# 
+# bs2 <- datbs2 %>% 
+#   group_by(idp, x, y) %>% 
+#   summarise(x = first(x),
+#             y = first(y),
+#             n = n(),
+#             cond = sum(cond1)/n,
+#             bottom = sum(bs_bot)) %>% 
+#   mutate(bs2 = if_else(cond == 1 & bottom == 1, 1, 0)) %>% 
+#   select(-cond, -bottom) %>%
+#   ungroup() %>% 
+#   na.omit() %>% 
+#   # filter(bs2 == 1) %>% 
+#   sf::st_as_sf(coords = c("x", "y"), crs = 4326) 
+
+library(maps)
+library(sf)
+arg  <-  sf::st_as_sf(map('world', plot = FALSE, fill = TRUE)) %>% filter(ID == "Argentina")
+
+ggplot() + geom_sf(data = arg) + geom_sf(data = y, )
+y %>% #filter(z==1 |z==2) %>% 
+ggplot() + geom_sf(data = arg) + geom_sf( aes(color = z), size = 0.7, alpha = 0.3)
 
 
+x %>% 
+  group_by(idp, x, y) %>% 
+  summarise(x = first(x),
+            y = first(y),
+            n = n(),
+            condbs2 = sum(bs2)/n,
+            condbs1 = sum(bs1)/n,
+            bottom = sum(bs_bot)) %>% 
+  mutate(bs2 = if_else(condbs2 == 1 & bottom == 1, 1, 0),
+         bs1 = if_else(condbs1 == 1 & bottom == 1, 1, 0)) %>% 
+  select(-condbs1, -condbs2, -bottom, -n) %>%
+  ungroup() %>%  
+  group_by(idp, x, y) %>%
+  summarize(z = ifelse(bs1 == 1,1,
+                       ifelse(bs2 == 1 & bs1 == 0,2,
+                              ifelse(bs1==0 & bs2==0, 0, NA)))) %>% 
+write_csv("data/perfiles_para_modelado.csv")
 # Despues de esta operación hay que dejar _sólo_ una fila por perfil. Actualmente tiene más de una.
 # 1ro. eliminar todos los horizontes que tengan top > 25. Esos no entran en el análisis.
 # 2do. evaluar si algunos de los horizontes de cada perfil tiene blacksoil2 == 0. Si sí,
