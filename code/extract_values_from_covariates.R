@@ -27,6 +27,11 @@ s <- read_csv("data/perfiles_para_modelado.csv") %>%
 
 s$z <- as.numeric(s$z)
 
+
+ls <- list.files("D:/Leo/1-COVARIABLES AMBIENTALES/1 KM Merit", recursive = TRUE, pattern = "\\.sdat$")
+?list.files
+
+
 r <- stack("/home/marcos/Documents/GDB/covs_Arg/all_covariates.tif")
 load("/home/marcos/Documents/GDB/covs_Arg/all_covariates_names.RData")
 names(r) <- namesCovarAll
